@@ -1,13 +1,16 @@
 package com.narxoz.rpg.battle;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public final class BattleEngine {
+public class BattleEngine {
+
     private static BattleEngine instance;
-    private Random random = new Random(1L);
+    private Random random = new Random();
 
     private BattleEngine() {
+        System.out.println("BattleEngine initialized");
     }
 
     public static BattleEngine getInstance() {
@@ -17,22 +20,85 @@ public final class BattleEngine {
         return instance;
     }
 
-    public BattleEngine setRandomSeed(long seed) {
-        this.random = new Random(seed);
-        return this;
+    public void setRandomSeed(long seed) {
+        random.setSeed(seed);
     }
 
-    public void reset() {
-        // TODO: reset any battle state if you add it
+    public EncounterResult runEncounter(List<Combatant> heroes, List<Combatant> enemies) {
+
+        List<String> battleLog = new ArrayList<>();
+        int rounds = 0;
+
+        while (hasAlive(heroes) && hasAlive(enemies)) {
+
+            rounds++;
+            battleLog.add("=== Round " + rounds + " ===");
+
+            // Heroes attack
+            for (Combatant hero : heroes) {
+                if (hero.isAlive()) {
+
+                    Combatant target = getRandomAlive(enemies);
+                    if (target != null) {
+                        int damage = hero.getAttackPower();
+                        target.takeDamage(damage);
+
+                        battleLog.add(hero.getName() +
+                                " attacks " +
+                                target.getName() +
+                                " for " + damage);
+                    }
+                }
+            }
+
+            // Enemies attack
+            for (Combatant enemy : enemies) {
+                if (enemy.isAlive()) {
+
+                    Combatant target = getRandomAlive(heroes);
+                    if (target != null) {
+                        int damage = enemy.getAttackPower();
+                        target.takeDamage(damage);
+
+                        battleLog.add(enemy.getName() +
+                                " attacks " +
+                                target.getName() +
+                                " for " + damage);
+                    }
+                }
+            }
+        }
+
+        String winner = hasAlive(heroes) ? "Heroes" : "Enemies";
+        battleLog.add("Winner: " + winner);
+
+        return new EncounterResult(winner, rounds, battleLog);
     }
 
-    public EncounterResult runEncounter(List<Combatant> teamA, List<Combatant> teamB) {
-        // TODO: validate inputs and run round-based battle
-        // TODO: use random if you add critical hits or target selection
-        EncounterResult result = new EncounterResult();
-        result.setWinner("TBD");
-        result.setRounds(0);
-        result.addLog("TODO: implement battle simulation");
-        return result;
+    private boolean hasAlive(List<Combatant> list) {
+        for (Combatant c : list) {
+            if (c.isAlive()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Combatant getRandomAlive(List<Combatant> list) {
+
+        List<Combatant> alive = new ArrayList<>();
+
+        for (Combatant c : list) {
+            if (c.isAlive()) {
+                alive.add(c);
+            }
+        }
+
+        if (alive.isEmpty()) {
+            return null;
+        }
+
+        int index = random.nextInt(alive.size());
+        return alive.get(index);
     }
 }
